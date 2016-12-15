@@ -3524,24 +3524,43 @@ end
 
 function test.catArray()
    for k, typename in ipairs(typenames) do
-      for dim = 1, 3 do
-	 local x = torch.Tensor(13, minsize, minsize):uniform()
-	    :type(typename):transpose(1, dim)
-	 local y = torch.Tensor(17, minsize, minsize):uniform()
-	    :type(typename):transpose(1, dim)
-	 local z = torch.Tensor(19, minsize, minsize):uniform()
-	    :type(typename):transpose(1, dim)
+     for dim = 1, 3 do
+         local x = torch.Tensor(13, minsize, minsize):uniform()
+            :type(typename):transpose(1, dim)
+         local y = torch.Tensor(17, minsize, minsize):uniform()
+            :type(typename):transpose(1, dim)
+         local z = torch.Tensor(19, minsize, minsize):uniform()
+            :type(typename):transpose(1, dim)
 
-	 local mx = torch.cat({x, y, z}, dim)
-	 tester:assertTensorEq(mx:narrow(dim, 1, 13), x, 0, 'torch.cat value')
-	 tester:assertTensorEq(mx:narrow(dim, 14, 17), y, 0, 'torch.cat value')
-	 tester:assertTensorEq(mx:narrow(dim, 31, 19), z, 0, 'torch.cat value')
+         local mx = torch.cat({x, y, z}, dim)
+         tester:assertTensorEq(mx:narrow(dim, 1, 13), x, 0, 'torch.cat value')
+         tester:assertTensorEq(mx:narrow(dim, 14, 17), y, 0, 'torch.cat value')
+         tester:assertTensorEq(mx:narrow(dim, 31, 19), z, 0, 'torch.cat value')
 
-	 local mxx = torch.Tensor():type(typename)
-	 torch.cat(mxx, {x, y, z}, dim)
-	 tester:assertTensorEq(mx, mxx, 0, 'torch.cat value')
+         local mxx = torch.Tensor():type(typename)
+         torch.cat(mxx, {x, y, z}, dim)
+         tester:assertTensorEq(mx, mxx, 0, 'torch.cat value')
       end
    end
+end
+
+function test.catArrayManyTensors()
+    for dim = 1, 3 do
+        local tensors = {}
+        for i = 1, 10000 do
+            table.insert(
+                tensors,
+                torch.CudaTensor(torch.random(1, 25), minsize, minsize)
+                    :uniform()
+                    :transpose(1, dim))
+        end
+        local mx = torch.cat(tensors, dim)
+        local offset = 1
+        for i = 1, 10000 do
+            tester:assertTensorEq(mx:narrow(dim, offset, tensors[i]:size(dim)), tensors[i], 0, 'torch.cat value')
+            offset = offset + tensors[i]:size(dim)
+        end
+    end
 end
 
 function test.streamWaitFor()
