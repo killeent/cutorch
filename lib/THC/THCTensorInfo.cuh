@@ -16,12 +16,12 @@
   CUTORCH_STR(MAX_CUTORCH_DIMS) ") dimensions"
 
 // CUDA kernel argument that defines tensor layout
-template <typename T, typename IndexType>
+template <typename T, typename IndexType, unsigned int MaxDims = MAX_CUTORCH_DIMS>
 struct TensorInfo {
   TensorInfo(T* p,
              int dim,
-             IndexType sz[MAX_CUTORCH_DIMS],
-             IndexType st[MAX_CUTORCH_DIMS]);
+             IndexType sz[MaxDims],
+             IndexType st[MaxDims]);
 
   // Set the size of the given dimension to 1, as if it were a
   // reduction dim (allows you to calculate offsets of the reduction
@@ -44,19 +44,19 @@ struct TensorInfo {
   }
 
   T* data;
-  IndexType sizes[MAX_CUTORCH_DIMS];
-  IndexType strides[MAX_CUTORCH_DIMS];
+  IndexType sizes[MaxDims];
+  IndexType strides[MaxDims];
   int dims;
 };
 
-template <typename T, typename IndexType>
-TensorInfo<T, IndexType>::TensorInfo(T* p,
+template <typename T, typename IndexType, unsigned int MaxDims>
+TensorInfo<T, IndexType, MaxDims>::TensorInfo(T* p,
                                      int dim,
-                                     IndexType sz[MAX_CUTORCH_DIMS],
-                                     IndexType st[MAX_CUTORCH_DIMS]) {
+                                     IndexType sz[MaxDims],
+                                     IndexType st[MaxDims]) {
   data = p;
   dims = dim;
-  assert(dims > 0 && dims < MAX_CUTORCH_DIMS);
+  assert(dims > 0 && dims < MaxDims);
 
   for (int i = 0; i < dim; ++i) {
     sizes[i] = sz[i];
@@ -64,16 +64,16 @@ TensorInfo<T, IndexType>::TensorInfo(T* p,
   }
 }
 
-template <typename T, typename IndexType>
+template <typename T, typename IndexType, unsigned int MaxDims>
 void
-TensorInfo<T, IndexType>::reduceDim(int dim) {
+TensorInfo<T, IndexType, MaxDims>::reduceDim(int dim) {
   assert(dim < dims && dim >= 0);
   sizes[dim] = 1;
 }
 
-template <typename T, typename IndexType>
+template <typename T, typename IndexType, unsigned int MaxDims>
 int
-TensorInfo<T, IndexType>::collapseDims(int excludeDim) {
+TensorInfo<T, IndexType, MaxDims>::collapseDims(int excludeDim) {
   // Find the innermost dimension not of size 1, since dimensions of size 1 are
   // collapsible.
   int firstNonOneDim = -1;
@@ -156,8 +156,8 @@ TensorInfo<T, IndexType>::collapseDims(int excludeDim) {
   }
 
   // This will be our new size/stride and dimension.
-  IndexType newSizes[MAX_CUTORCH_DIMS];
-  IndexType newStrides[MAX_CUTORCH_DIMS];
+  IndexType newSizes[MaxDims];
+  IndexType newStrides[MaxDims];
 
   assert(numCollapsed < dims);
   int newDims = dims - numCollapsed;
