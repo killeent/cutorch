@@ -50,11 +50,24 @@ struct TensorInfo {
 
   __host__ __device__ TensorInfo<T, IndexType> newNarrow(int dimension, IndexType firstIndex, IndexType size) const;
 
+  __host__ __device__ void debugString() const;
+
   T* data;
   IndexType sizes[MAX_CUTORCH_DIMS];
   IndexType strides[MAX_CUTORCH_DIMS];
   int dims;
 };
+
+template <typename T, typename IndexType>
+void
+TensorInfo<T, IndexType>::debugString() const {
+  printf("TensorInfo (dim=%d), starting at %p\n", dims, data);
+  printf("Size/Stride pairs:");
+  for (int i = 0; i < dims; ++i) {
+    printf(" (%d, %d),", sizes[i], strides[i]);
+  }
+  printf("\n");
+}
 
 template <typename T, typename IndexType>
 TensorInfo<T, IndexType>::TensorInfo(T* p,
